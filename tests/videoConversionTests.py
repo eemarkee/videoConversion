@@ -1,7 +1,7 @@
 import unittest
-from videoConversion import get_video_info, convert_to_h265
+from gui import get_video_info, convert_to_h265
 
-class TestVideoConversion(unittest.TestCase):
+class Testgui(unittest.TestCase):
     def test_get_video_info(self):
         input_codec, input_size, total_frames = get_video_info("test_video.mp4")
         self.assertEqual(input_codec, "h264")

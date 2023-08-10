@@ -1,14 +1,26 @@
-from videoConversion import root, progress_var
-from videoConversion import status_var, open_output_button, log_tree, file_button, status_label, remove_input_var, remove_input_checkbox
-from settings import input_codec, input_size, total_frames, file_directory, explorer_directory, progress_pattern
+# processing functions
 
+from settings import progress_pattern, status_var, progress_var, root, log_file, current_file_label
+from settings import open_output_button, log_tree, status_label, remove_input_var, progress_var, progress_bar
+from settings import crf_label, crf_entry, crf_var
 import os
 import subprocess
 import json
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import messagebox
 import threading
 
+
+def process_files(file_paths):
+    for file_path in file_paths:
+        convert_to_h265(file_path, remove_input_var.get())
+
+def select_files():
+    file_paths = filedialog.askopenfilenames(filetypes=[("Video files", "*.mp4 *.avi *.mkv")])
+    if file_paths:
+        thread = threading.Thread(target=process_files, args=(file_paths,))
+        thread.start()
 
 def get_video_info(file_path):
     ffprobe_command = (
@@ -59,8 +71,15 @@ def convert_to_h265(file_path,remove_input):
     output_name = f"{base_name}_h265.mp4"
     output_path = os.path.join(file_directory, output_name)
 
+    if os.path.exists(output_path):
+        response = messagebox.askyesno("File Exists", f"The output file '{output_name}' already exists. Do you want to overwrite it?")
+        if not response:
+            status_var.set("Skipped conversion due to existing output file")
+            return
+        
     cmd = [
         "ffmpeg",
+        "-y",
         "-loglevel", "quiet", "-stats",
         "-i", file_path,
         "-c:v", "libx265",
@@ -81,6 +100,7 @@ def convert_to_h265(file_path,remove_input):
             progress = min(int((frame_num / total_frames) * 100), 100)
             progress_var.set(progress)
             status_var.set("Converting: " + line.strip())  # Update status with FFmpeg output
+            current_file_label.config(text="Processing: " + file_name)  # Update current file label
             root.update_idletasks()  # Update the GUI
 
 
@@ -102,8 +122,7 @@ def convert_to_h265(file_path,remove_input):
     root.after(100, lambda: root.update())  # Update the GUI every 100 ms
 
 def update_log(file_directory,file_name, input_codec, output_codec, input_size, output_size, relative_size):
-    log_file = "conversion_log.json"
-
+    
     # Create a new entry dictionary
     log_entry = {
         "Directory":        file_directory,
@@ -153,12 +172,29 @@ def on_tree_select(event):
             explorer_directory = os.path.dirname(values[0])
             open_output_button.config(state="normal")
 
-def select_files():
-    file_paths = filedialog.askopenfilenames(filetypes=[("Video files", "*.mp4 *.avi *.mkv")])
-    if file_paths:
-        thread = threading.Thread(target=process_files, args=(file_paths,))
-        thread.start()
 
-def process_files(file_paths):
-    for file_path in file_paths:
-        convert_to_h265(file_path, remove_input_var.get())
+def load_last_log_entries(log_tree):
+    try:
+        with open(log_file, "r") as f:
+            log_data_list = json.load(f)
+
+        # Get the last 5 entries or all entries if there are less than 5
+        last_entries = log_data_list[-15:]
+
+        for entry in last_entries:
+            # Extract relevant values and insert into the treeview
+            file_directory =     entry.get("Directory", "Unknown")
+            file_name =         entry.get("File Name", "Unknown")
+            input_codec  =     entry.get("Input Codec", "Unknown")
+            output_codec =     entry.get("Output Codec", "Unknown")
+            input_size =         entry.get("Input Size", "Unknown")
+            output_size =       entry.get("Output Size", "Unknown")
+            relative_size =     entry.get("Relative Size", "Unknown")
+
+            log_tree.insert("", tk.END, values=(file_directory,file_name, input_codec, output_codec, input_size, output_size, relative_size))
+
+    except FileNotFoundError:
+        pass  # Handle the case when the log file is not found
+# Gui Elements
+open_output_button = tk.Button(root, text="Open Output Directory", command=open_output_directory, state="disabled")
+open_output_button.grid(row=2,column=0, padx=5, pady=5, sticky = 'w')
