@@ -1,37 +1,14 @@
+from videoConversion import root, progress_var
+from videoConversion import status_var, open_output_button, log_tree, file_button, status_label, remove_input_var, remove_input_checkbox
+from settings import input_codec, input_size, total_frames, file_directory, explorer_directory, progress_pattern
+
 import os
 import subprocess
 import json
 import tkinter as tk
 from tkinter import filedialog
-from tkinter import ttk
-from tkinter import messagebox
-import re
 import threading
 
-# Define the progress pattern for FFmpeg progress detection
-progress_pattern = re.compile(r"frame=\s*(\d+)")
-
-root = tk.Tk()
-root.title("Video Converter")
-
-status_var = tk.StringVar()
-status_var.set("Select a File")
-progress_var = tk.IntVar()
-input_codec = "Unknown"
-input_size = 0
-total_frames = 1  # Default value to avoid division by zero in case FFprobe fails
-output_path = ""  # Define a global variable to hold the output path
-explorer_directory = ""
-
-def select_files():
-    file_paths = filedialog.askopenfilenames(filetypes=[("Video files", "*.mp4 *.avi *.mkv")])
-    if file_paths:
-        thread = threading.Thread(target=process_files, args=(file_paths,))
-        thread.start()
-
-def process_files(file_paths):
-    for file_path in file_paths:
-        convert_to_h265(file_path, remove_input_var.get())
 
 def get_video_info(file_path):
     ffprobe_command = (
@@ -68,7 +45,7 @@ def get_video_info(file_path):
         return "Unknown", "Unknown", 0, 0
 
 def convert_to_h265(file_path,remove_input):
-    global input_codec, input_size, total_frames, file_directory
+    global input_codec, input_size, total_frames, file_directory, root
     
     input_codec, input_size, total_frames = get_video_info(file_path)
 
@@ -124,39 +101,6 @@ def convert_to_h265(file_path,remove_input):
 
     root.after(100, lambda: root.update())  # Update the GUI every 100 ms
 
-def load_last_log_entries(log_tree):
-    log_file = "conversion_log.json"
-    try:
-        with open(log_file, "r") as f:
-            log_data_list = json.load(f)
-
-        # Get the last 5 entries or all entries if there are less than 5
-        last_entries = log_data_list[-5:]
-
-        for entry in last_entries:
-            # Extract relevant values and insert into the treeview
-            file_directory =     entry.get("Directory", "Unknown")
-            file_name =         entry.get("File Name", "Unknown")
-            input_codec  =     entry.get("Input Codec", "Unknown")
-            output_codec =     entry.get("Output Codec", "Unknown")
-            input_size =         entry.get("Input Size", "Unknown")
-            output_size =       entry.get("Output Size", "Unknown")
-            relative_size =     entry.get("Relative Size", "Unknown")
-
-            log_tree.insert("", tk.END, values=(file_directory,file_name, input_codec, output_codec, input_size, output_size, relative_size))
-
-    except FileNotFoundError:
-        pass  # Handle the case when the log file is not found
-
-def move_input_file(input_path):
-    input_file_name = os.path.basename(input_path)
-    input_folder = os.path.join(os.path.dirname(input_path), "inputFiles")
-    if not os.path.exists(input_folder):
-        os.makedirs(input_folder)
-    
-    new_input_path = os.path.join(input_folder, input_file_name)
-    os.rename(input_path, new_input_path)
-
 def update_log(file_directory,file_name, input_codec, output_codec, input_size, output_size, relative_size):
     log_file = "conversion_log.json"
 
@@ -188,6 +132,18 @@ def update_log(file_directory,file_name, input_codec, output_codec, input_size, 
     # Insert the new entry into the treeview
     log_tree.insert("", tk.END, values=(file_directory,file_name, input_codec, output_codec, input_size, output_size, relative_size))
 
+def move_input_file(input_path):
+    input_file_name = os.path.basename(input_path)
+    input_folder = os.path.join(os.path.dirname(input_path), "inputFiles")
+    if not os.path.exists(input_folder):
+        os.makedirs(input_folder)
+    
+    new_input_path = os.path.join(input_folder, input_file_name)
+    os.rename(input_path, new_input_path)
+
+def open_output_directory():
+    subprocess.Popen(["explorer", os.path.normpath(explorer_directory)], shell=True)
+
 def on_tree_select(event):
     global explorer_directory
     selected_item = log_tree.selection()
@@ -197,42 +153,12 @@ def on_tree_select(event):
             explorer_directory = os.path.dirname(values[0])
             open_output_button.config(state="normal")
 
-def open_output_directory():
-    subprocess.Popen(["explorer", os.path.normpath(explorer_directory)], shell=True)
+def select_files():
+    file_paths = filedialog.askopenfilenames(filetypes=[("Video files", "*.mp4 *.avi *.mkv")])
+    if file_paths:
+        thread = threading.Thread(target=process_files, args=(file_paths,))
+        thread.start()
 
-##################################################
-# GUI Element Creation
-file_button = tk.Button(root, text="Select Files", command=select_files)
-file_button.pack(pady=5)
-
-status_label = tk.Label(root, textvariable=status_var)
-status_label.pack(pady=5)
-
-remove_input_var = tk.BooleanVar(value=False)  # Create a BooleanVar to hold the checkbox value
-remove_input_checkbox = tk.Checkbutton(root, text="Remove input file after completion", variable=remove_input_var)
-remove_input_checkbox.pack(pady=5)
-
-# Use ttk.Progressbar instead of tk.Progressbar
-progress_bar = ttk.Progressbar(root, variable=progress_var, maximum=100)
-progress_bar.pack(pady=5)
-
-open_output_button = tk.Button(root, text="Open Output Directory", command=open_output_directory, state="disabled")
-open_output_button.pack(pady=5)
-
-# Add a Treeview widget to display log entries as a table
-columns = ("Directory", "File Name", "Input Codec", "Output Codec", "Input Size", "Output Size", "Relative Size")
-log_tree = ttk.Treeview(root, columns=columns, show="headings")
-log_tree.bind("<<TreeviewSelect>>", on_tree_select)
-# Set column headings
-for col in columns:
-    log_tree.heading(col, text=col)
-    log_tree.column(col, width=100)  # Adjust the column width as needed
-
-
-log_tree.pack(pady=5)
-
-# Call the function to load the last log entries on startup
-load_last_log_entries(log_tree)
-
-######################################################
-root.mainloop()
+def process_files(file_paths):
+    for file_path in file_paths:
+        convert_to_h265(file_path, remove_input_var.get())
