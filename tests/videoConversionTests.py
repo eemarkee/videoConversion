@@ -1,5 +1,6 @@
 import unittest
 from gui import get_video_info, convert_to_h265
+import os
 
 class Testgui(unittest.TestCase):
     def test_get_video_info(self):
