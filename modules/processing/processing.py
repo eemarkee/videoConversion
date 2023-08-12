@@ -1,3 +1,4 @@
+# processing.py
 import os
 import subprocess
 import json
@@ -11,7 +12,7 @@ class VideoProcessor:
     def get_video_info(self, file_path):
         
         ffprobe_command = (
-            f"ffprobe -v error -show_entries format:stream=codec_name,format:stream=codec_type,format:stream=r_frame_rate -of json {file_path}"
+            f'ffprobe -v error -show_entries format:stream=codec_name,format:stream=codec_type,format:stream=r_frame_rate -of json "{file_path}"'
         )
 
         try:

@@ -1,17 +1,34 @@
+# gui.py
+import json
 import tkinter as tk
 from tkinter import ttk, filedialog
-from video_settings import video_settings
-from processing import VideoProcessor
-from settings import Settings
+from modules.video_settings.video_settings import video_settings
+from modules.processing.processing import VideoProcessor
+from modules.settings.settings import Settings
 import os
-import json
 import subprocess
 import threading
+
+
+def load_config(filename="gui_config.json"):
+    # Build an absolute path to the configuration file
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    config_path = os.path.join(dir_path, filename)
+
+    try:
+        with open(config_path, 'r') as file:
+            config = json.load(file)
+        return config
+    except FileNotFoundError:
+        print(f"Error: Configuration file '{config_path}' not found.")
+        return {}
+
+config = load_config()
 
 class VideoConverterApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Video Converter")
+        self.root.title(config['window']['title'])
         self.video_processor = VideoProcessor()  # Pass the selected codec name
         self.settings = Settings()
 
@@ -184,7 +201,3 @@ class VideoConverterApp:
             pass  # Handle the case when the log file is not found
     
     
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = VideoConverterApp(root)
-    root.mainloop()

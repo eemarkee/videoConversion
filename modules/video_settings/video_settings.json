@@ -1,0 +1,31 @@
+{
+    "file_path": "",
+    "file_directory": "",
+    "file_name": "",
+    "output_name": "",
+    "output_path": "",
+    "output_codec": "h265",
+    "crf": 28,
+    "input_codec": "",
+    "input_width": 0,
+    "input_height": 0,
+    "frame_rate": 0,
+    "bit_depth": 8,
+    "pixel_format": "",
+    "total_frames": 1,
+    "file_paths": [],
+    "input_size": 1,
+    "output_size": 1,
+    "relative_size": 1,
+    "codec_map": {
+        "hevc": "h265",
+        "avc": "h264"
+    },
+    "ffmpeg_codec_map": {
+        "h265": "libx265",
+        "h264": "libx264",
+        "rawvideo" : "rawvideo",
+        "ffv1": "ffv1"
+    },
+    "ffmpeg_codec": ""
+}

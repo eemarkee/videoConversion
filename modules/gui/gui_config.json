@@ -1,0 +1,21 @@
+{
+    "window": {
+        "title": "Video Converter",
+        "width": 800,
+        "height": 600
+    },
+    "buttons": {
+        "add_file": "Add File",
+        "clear_list": "Clear List",
+        "convert": "Convert",
+        "open_output": "Open Output Directory"
+    },
+    "labels": {
+        "current_file": "Current File: ",
+        "status": "Status: "
+    },
+    "default_values": {
+        "output_codec": "h265",
+        "crf": 28
+    }
+}

@@ -1,0 +1,5 @@
+{
+    "log_file": "logs/conversion_log.json",
+    "logs_folder": "logs",
+    "columns": ["Directory", "File Name", "Input Codec", "Output Codec", "Input Size", "Output Size", "Relative Size"]
+}
