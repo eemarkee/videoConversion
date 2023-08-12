@@ -19,7 +19,7 @@ class VideoConverterApp:
         ttk.Button(self.root, text="Select Files", command=self.select_files).grid(row=0, column=0, padx=5, pady=5, sticky="w")
         
         # Create a Current File Text 
-        ttk.Label(self.root, text="Current File:").grid(row=0, column=1, padx=5, pady=5, sticky="e")
+        # ttk.Label(self.root, text="Current File:").grid(row=0, column=1, padx=5, pady=5, sticky="e")
         self.current_file_label = ttk.Label(self.root, text="")
         self.current_file_label.grid(row=0, column=2, padx=5, pady=5, sticky="e")
         
@@ -43,9 +43,15 @@ class VideoConverterApp:
         codec_dropdown.grid(row=1, column=0, padx=(200,0), pady=5, sticky="w")
 
         # Create a check box for moving the file after processing into it's own folder
-        self.remove_input_var = False
-        self.remove_input_checkbox = tk.Checkbutton(root, text="Move Input File", variable=self.remove_input_var)
-     
+        self.remove_input_var =  tk.BooleanVar(value=False)
+        self.remove_input_checkbox = ttk.Checkbutton(root, text="Move Input File", variable=self.remove_input_var, width=10)
+        self.remove_input_checkbox.grid(row=0, column=0, padx=(87,0), pady=5, sticky="w")
+
+        # Force Overwrites
+        self.overwrite_file =  tk.BooleanVar(value=False)
+        self.overwrite_file_checkbox = ttk.Checkbutton(root, text="Overwrite Existing", variable=self.overwrite_file, width=17)
+        self.overwrite_file_checkbox.grid(row=0, column=0, padx=(175,0), pady=5, sticky="w")
+
         # Inside the __init__ method of the VideoConverterApp class
         self.open_output_button = ttk.Button(self.root, text="Open Output Directory", command=self.open_output_directory)
         self.open_output_button.grid(row=7, column=0, columnspan=2, padx=5, pady=5, sticky="w")
@@ -113,10 +119,10 @@ class VideoConverterApp:
                 self.update_current_file_label(video_settings.file_path)
                 self.video_processor.convert_video(video_settings,self)
                         
-                if self.remove_input_var:
+                if self.remove_input_var.get():
                     self.move_input_file(video_settings.file_path)  # Call the function to move the input file
 
-                    self.update_log()
+                self.update_log()
         except FileNotFoundError:
             self.status_var.set('Select a File for Conversion')
 
