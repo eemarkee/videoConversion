@@ -62,13 +62,13 @@ class VideoProcessor:
         video_settings.output_path = os.path.normpath(os.path.join(video_settings.file_directory, video_settings.output_name))
 
         # Check if the input file codec matches the desired output codec
-        if self.map_codec(video_settings.input_codec,video_settings.codec_map) == video_settings.output_codec:  # Check if input codec matches selected codec
+        if (self.map_codec(video_settings.input_codec,video_settings.codec_map) == video_settings.output_codec) and not app.overwrite_file:  # Check if input codec matches selected codec
             app.status_var.set(f"Input file is already in {video_settings.output_codec} format, skipping conversion")
             return
         # Check if a converted version of the output file exists
         if os.path.exists(video_settings.output_path):
             response = messagebox.askyesno("File Exists", f"The output file '{video_settings.output_name}' already exists. Do you want to overwrite it?")
-            if not response and ~app.overwrite_file.get():
+            if not response and not app.overwrite_file.get():
                 app.status_var.set("Skipped conversion due to existing output file")
                 return
         

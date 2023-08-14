@@ -97,7 +97,7 @@ class VideoConverterApp:
         # Load the log file if it exists
         self.load_last_log_entries(video_settings)
     def select_files(self):
-        self.file_paths = filedialog.askopenfilenames(filetypes=[("Video files", "*.mp4 *.avi *.mkv" "*.3gp" "*.mov" "*.tiff" "*.y4m")])
+        self.file_paths = filedialog.askopenfilenames(filetypes=[("Video files", "*.mp4 *.avi *.mkv" "*.3gp" "*.mov" "*.wmv" "*.tiff" "*.y4m")])
 
     def update_log(self):
         
