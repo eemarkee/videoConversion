@@ -1,8 +1,8 @@
 {
     "window": {
         "title": "Video Converter",
-        "width": 800,
-        "height": 600
+        "width": 900,
+        "height": 700
     },
     "buttons": {
         "add_file": "Add File",
@@ -17,5 +17,16 @@
     "default_values": {
         "output_codec": "h265",
         "crf": 28
-    }
+    },
+    "columns": [
+        {"name": "Directory", "width": 150, "alignment": "w"},
+        {"name": "File Name", "width": 150, "alignment": "w"},
+        {"name": "Input Codec", "width": 80, "alignment": "center"},
+        {"name": "Output Codec", "width": 85, "alignment": "center"},
+        {"name": "Input Size", "width": 70, "alignment": "center"},
+        {"name": "Output Size", "width": 70, "alignment": "center"},
+        {"name": "Relative Size", "width": 85, "alignment": "center"}
+    ]
+    
+
 }

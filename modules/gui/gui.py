@@ -10,95 +10,150 @@ import subprocess
 import threading
 
 
-def load_config(filename="gui_config.json"):
-    # Build an absolute path to the configuration file
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    config_path = os.path.join(dir_path, filename)
-
-    try:
-        with open(config_path, 'r') as file:
-            config = json.load(file)
-        return config
-    except FileNotFoundError:
-        print(f"Error: Configuration file '{config_path}' not found.")
-        return {}
-
-config = load_config()
 
 class VideoConverterApp:
-    def __init__(self, root):
+    def __init__(self, root,config_path="gui_config.json"):
+        # Determine the directory of the current module
+        module_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Form the path to the configuration file relative to this module's directory
+        config_file_path = os.path.join(module_dir,config_path)
+
+        self.config = self.load_config(config_file_path)
+
+        # UI related variables
         self.root = root
-        self.root.title(config['window']['title'])
+        self.root.title(self.config['window']['title'])
         self.video_processor = VideoProcessor()  # Pass the selected codec name
         self.settings = Settings()
+        self.config = self.load_config(config_file_path)
 
         # Create and place GUI elements using grid
-        ttk.Button(self.root, text="Select Files", command=self.select_files).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        ttk.Button(self.root, text="Select Files", command=self.select_files).grid(row=0, column=0, padx=5, pady=0, sticky="w")
         
         # Create a Current File Text 
-        # ttk.Label(self.root, text="Current File:").grid(row=0, column=1, padx=5, pady=5, sticky="e")
+        # ttk.Label(self.root, text="Current File:").grid(row=0, column=1, padx=5, pady=0, sticky="e")
         self.current_file_label = ttk.Label(self.root, text="")
-        self.current_file_label.grid(row=0, column=2, padx=5, pady=5, sticky="e")
+        self.current_file_label.grid(row=0, column=2, padx=0, pady=0, sticky="e")
         
         # CRF Codec Value
-        ttk.Label(self.root, text="CRF:").grid(row=1, column=0, padx=(280,0), pady=5, sticky="w")
+        crf_x = 280
+        ttk.Label(self.root, text="CRF:").grid(row=1, column=0, padx=(crf_x,0), pady=0, sticky="w")
         
         crf_entry_width = 2  # Adjust the width as needed
         self.crf_entry = ttk.Entry(self.root, textvariable=video_settings.crf_var, width=crf_entry_width)
-        self.crf_entry.grid(row=1, column=0, padx=(310,2), pady=5, sticky="w")
+        self.crf_entry.grid(row=1, column=0, padx=(crf_x+30,2), pady=0, sticky="w")
+
+        # Start Time Value
+        start_time_x = 430
+        ttk.Label(self.root, text="Start Time:").grid(row=1, column=0, padx=(start_time_x,0), pady=0, sticky="w")
         
+        start_time_entry_width = 5  # Adjust the width as needed
+        self.crf_entry = ttk.Entry(self.root, textvariable=video_settings.start_time_var, width=start_time_entry_width)
+        self.crf_entry.grid(row=1, column=0, padx=(start_time_x+60,2), pady=0, sticky="w")
+
+        # Stop Time Value
+        stop_time_x = 525
+        ttk.Label(self.root, text="Stop Time:").grid(row=1, column=0, padx=(stop_time_x,0), pady=0, sticky="w")
+        
+        stop_time_entry_width = 5  # Adjust the width as needed
+        self.crf_entry = ttk.Entry(self.root, textvariable=video_settings.stop_time_var, width=stop_time_entry_width)
+        self.crf_entry.grid(row=1, column=0, padx=(stop_time_x+60,2), pady=0, sticky="w")
+
+         # Frame Rate Value
+        frame_rate_x = 330
+        ttk.Label(self.root, text="Frame Rate:").grid(row=1, column=0, padx=(frame_rate_x,0), pady=0, sticky="w")
+        
+        frame_rate_entry_width = 4  # Adjust the width as needed
+        self.frame_rate = ttk.Entry(self.root, textvariable=video_settings.frame_rate_var, width=frame_rate_entry_width)
+        self.frame_rate.grid(row=1, column=0, padx=(frame_rate_x+65,2), pady=0, sticky="w")
+        
+        # Create a button to start processing
         self.start_processing_button = ttk.Button(self.root, text="Start Processing", command=self.start_processing)
-        self.start_processing_button.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="w")
+        self.start_processing_button.grid(row=1, column=0, columnspan=3, padx=5, pady=0, sticky="w")
+        
+        # Create a button to wipe the log file
+        self.clear_log_btn = ttk.Button(self.root, text="Clear Log", command=self.clear_log)
+        self.clear_log_btn.grid(row=5, column=2, columnspan=1, padx=5, pady=0, sticky="e")
         
         # Create a label for the codec dropdown box
         self.codec_label = tk.Label(self.root, text="Output Codec:", width = 10)
-        self.codec_label.grid(row=1, column=0, padx=(110,5), pady=5, sticky="w")
+        self.codec_label.grid(row=1, column=0, padx=(110,5), pady=0, sticky="w")
 
         # Create a dropdown box for selecting the codec
         codec_options = ["ffv1", "rawvideo", "h264", "h265"]
         codec_dropdown = ttk.Combobox(self.root, textvariable=video_settings.output_codec_var, values=codec_options, width=8)
-        codec_dropdown.grid(row=1, column=0, padx=(200,0), pady=5, sticky="w")
+        codec_dropdown.grid(row=1, column=0, padx=(200,0), pady=0, sticky="w")
 
         # Create a check box for moving the file after processing into it's own folder
         self.remove_input_var =  tk.BooleanVar(value=False)
         self.remove_input_checkbox = ttk.Checkbutton(root, text="Move Input File", variable=self.remove_input_var, width=10)
-        self.remove_input_checkbox.grid(row=0, column=0, padx=(87,0), pady=5, sticky="w")
+        self.remove_input_checkbox.grid(row=0, column=0, padx=(87,0), pady=0, sticky="w")
 
         # Force Overwrites
         self.overwrite_file =  tk.BooleanVar(value=False)
-        self.overwrite_file_checkbox = ttk.Checkbutton(root, text="Overwrite Existing", variable=self.overwrite_file, width=17)
-        self.overwrite_file_checkbox.grid(row=0, column=0, padx=(175,0), pady=5, sticky="w")
+        self.overwrite_file_checkbox = ttk.Checkbutton(root, text="Force Output", variable=self.overwrite_file, width=17)
+        self.overwrite_file_checkbox.grid(row=0, column=0, padx=(175,0), pady=0, sticky="w")
 
-        # Inside the __init__ method of the VideoConverterApp class
+        # Overwrite Framerate
+        force_frame_x = 270
+        self.overwrite_fps =  tk.BooleanVar(value=False)
+        self.overwrite_fps_checkbox = ttk.Checkbutton(root, text="Force Frame Rate", variable=self.overwrite_fps, width=17)
+        self.overwrite_fps_checkbox.grid(row=0, column=0, padx=(force_frame_x,0), pady=0, sticky="w")
+
+        # Use Start/Stop Time
+        use_start_stop_x = 385
+        self.use_start_stop =  tk.BooleanVar(value=False)
+        self.overwrite_fps_checkbox = ttk.Checkbutton(root, text="Use Start/Stop Time", variable=self.use_start_stop, width=20)
+        self.overwrite_fps_checkbox.grid(row=0, column=0, padx=(use_start_stop_x,0), pady=0, sticky="w")
+
+        # Open Output Directory
         self.open_output_button = ttk.Button(self.root, text="Open Output Directory", command=self.open_output_directory)
-        self.open_output_button.grid(row=7, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+        self.open_output_button.grid(row=7, column=0, columnspan=2, padx=0, pady=0, sticky="w")
         
         # Create progress and status variables
         self.progress_var = tk.IntVar()
         self.status_var = tk.StringVar()
         self.status_var.set("Select a File")
+
         # Status Text on bottom of window
-        self.status_label = tk.Label(root, textvariable=self.status_var)
-        self.status_label.grid(row=7, column=0,columnspan=4, padx=(150,0), pady=5, sticky="w")
+        self.status_label = tk.Label(root, textvariable=self.status_var,wraplength=500)
+        self.status_label.grid(row=7, column=0,columnspan=4, padx=(150,0), pady=0, sticky="w")
         
         # Create progress bar and status text
         self.progress_bar = ttk.Progressbar(self.root, variable=self.progress_var, maximum=100)
-        self.progress_bar.grid(row=4, column=0, columnspan=3, padx=5, pady=5, sticky="w")
+        self.progress_bar.grid(row=4, column=0, columnspan=3, padx=5, pady=2, sticky="w")
 
-        ttk.Label(self.root, text="Log Entries:").grid(row=5, column=0, columnspan=3, padx=5, pady=5, sticky="w")
-        columns = ("Directory", "File Name", "Input Codec", "Output Codec", "Input Size", "Output Size", "Relative Size")
-        self.log_tree = ttk.Treeview(self.root, columns=columns, show="headings")
-        for col in columns:
-            self.log_tree.heading(col, text=col)
-            self.log_tree.column(col, width=100)
-        self.log_tree.grid(row=6, column=0, columnspan=3, padx=5, pady=5, sticky="w")
+        ttk.Label(self.root, text="Log Entries:").grid(row=5, column=0, columnspan=3, padx=5, pady=0, sticky="w")
+
+
+        # Extract columns configuration
+        columns_config = self.config['columns']
+
+        ttk.Label(self.root, text="Log Entries:").grid(row=5, column=0, columnspan=3, padx=5, pady=0, sticky="w")
+
+        column_names = [col['name'] for col in columns_config]
+
+        self.log_tree = ttk.Treeview(self.root, columns=column_names, show="headings")
+
+        for col_config in columns_config:
+            col_name = col_config['name']
+            width = col_config['width']
+            anchor = col_config['alignment']
+
+            self.log_tree.heading(col_name, text=col_name)
+            self.log_tree.column(col_name, width=width, anchor=anchor)
+
+        self.log_tree.grid(row=6, column=0, columnspan=3, padx=5, pady=0, sticky="w")
         self.log_tree.bind("<<TreeviewSelect>>", self.on_tree_select)
 
         # Load the log file if it exists
-        self.load_last_log_entries(video_settings)
+        self.load_last_log_entries()
     def select_files(self):
-        self.file_paths = filedialog.askopenfilenames(filetypes=[("Video files", "*.mp4 *.avi *.mkv" "*.3gp" "*.mov" "*.wmv" "*.tiff" "*.y4m")])
-
+        self.file_paths = filedialog.askopenfilenames(filetypes=[
+            ("Video Files", "*.mp4;*.avi;*.mkv;*.3gp;*.mov;*.wmv"),
+            ("Image Files", "*.tif;*.tiff"),
+        ])
     def update_log(self):
         
         # Create a new entry dictionary
@@ -114,8 +169,21 @@ class VideoConverterApp:
 
         try:
             # Read the existing log entries or initialize as empty list if log file doesn't exist
-            with open(self.settings.log_file, "r") as f:
-                log_data_list = json.load(f)
+            with open(self.settings.log_file, 'r+') as log_file:
+                log_data_list = json.load(log_file)
+                log_data_list.reverse()
+                # Append the new log data
+                log_data_list.append(self.log_entry)
+                
+                # Go back to the start of the file
+                log_file.seek(0)
+                
+                # Write the updated log data
+                json.dump(log_data_list, log_file, indent=4)
+                
+                # Truncate the file to the current position (this will remove any data beyond this point)
+                log_file.truncate()
+
         except FileNotFoundError:
             log_data_list = []
 
@@ -132,14 +200,29 @@ class VideoConverterApp:
     def process_files(self):
         self.update_conversion_vars()  # Populate video conversion settings from gui
         try:
-            for video_settings.file_path in self.file_paths:
+            video_settings.output_frame_rate = int(self.frame_rate.get())
+            # Check if all files have the .tif or .tiff extension
+            if all(fp.lower().endswith(('.tif', '.tiff')) for fp in self.file_paths):
+                # Process all TIFFs as one video
+                video_settings.file_path = self.file_paths[0]
                 self.update_current_file_label(video_settings.file_path)
-                self.video_processor.convert_video(video_settings,self)
-                        
-                if self.remove_input_var.get():
-                    self.move_input_file(video_settings.file_path)  # Call the function to move the input file
+                result = self.video_processor.process_tiffs_to_video(self.file_paths, self.settings.ffmpeg_path, video_settings, self)
+                if result == "SKIPPED":
+                    print(f"Skipped conversion for {video_settings.file_name}")
+                else:
+                    self.update_log()
+            else:
+                for video_settings.file_path in self.file_paths:
+                    self.update_current_file_label(video_settings.file_path)
+                    result = self.video_processor.convert_video(video_settings,self)
 
-                self.update_log()
+                    if result == "SKIPPED":
+                        print(f"Skipped conversion for {video_settings.file_name}")
+                    else:
+                        self.update_log()
+
+                    if self.remove_input_var.get():
+                        self.move_input_file(video_settings.file_path)  # Call the function to move the input file
         except FileNotFoundError:
             self.status_var.set('Select a File for Conversion')
 
@@ -150,7 +233,10 @@ class VideoConverterApp:
     # Read in all conversion variables from the gui
     def update_conversion_vars(self):
         video_settings.crf = video_settings.crf_var.get()
+        video_settings.frame_rate = video_settings.frame_rate_var.get()
         video_settings.output_codec = video_settings.output_codec_var.get()
+        video_settings.start_time = video_settings.start_time_var.get()
+        video_settings.stop_time = video_settings.stop_time_var.get()
     
     def on_tree_select(self,event):
         selected_item = self.log_tree.selection()
@@ -177,7 +263,7 @@ class VideoConverterApp:
         processing_thread = threading.Thread(target=self.process_files)
         processing_thread.start()
 
-    def load_last_log_entries(self,video_settings):
+    def load_last_log_entries(self):
         try:
             with open(self.settings.log_file, "r") as f:
                 log_data_list = json.load(f)
@@ -198,6 +284,27 @@ class VideoConverterApp:
                 self.log_tree.insert("", tk.END, values=(file_directory,file_name, input_codec, output_codec, input_size, output_size, relative_size))
 
         except FileNotFoundError:
-            pass  # Handle the case when the log file is not found
+            pass  # Handle the case when the log file is not found 
+    
+    def clear_log(self):
+    # Path to the log file (adjust to your actual path)
+      
+        # Clear the file by writing an empty JSON array
+        with open(self.settings.log_file, 'w') as log_file:
+            log_file.write("[]")
+
+        # Optionally: Notify the user
+        self.status_var.set("Log cleared successfully!")
+        self.log_tree.delete(*self.log_tree.get_children())
+    
+    def load_config(self,config_file_path):
+        try:
+            with open(config_file_path, 'r') as file:
+                config = json.load(file)
+            return config
+        except FileNotFoundError:
+            print(f"Error: Configuration file '{config_file_path}' not found.")
+            return {}
+
     
     
