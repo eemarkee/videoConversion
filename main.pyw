@@ -1,4 +1,4 @@
-# main.pyw
+# Main Python File. Launches the GUI without a command window
 import tkinter as tk
 import sys
 import os
