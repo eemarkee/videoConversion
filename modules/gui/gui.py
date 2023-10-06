@@ -318,6 +318,16 @@ class VideoConverterApp:
                 self.open_output_button.config(state="normal")
 
     def move_input_file(self,input_path):
+        """
+        Moves the specified input file to a subdirectory called 'inputFiles' within the directory 
+        of the provided path. If the 'inputFiles' directory does not exist, it is created.
+
+        Parameters:
+        - input_path (str): The absolute path of the file to be moved.
+
+        Returns:
+        None
+        """
         input_file_name = os.path.basename(input_path)
         input_folder = os.path.join(os.path.dirname(input_path), "inputFiles")
         if not os.path.exists(input_folder):
@@ -328,13 +338,37 @@ class VideoConverterApp:
 
 
     def open_output_directory(self):
+        """
+        Opens the output directory using the system's default file explorer. The directory is 
+        specified by the `explorer_directory` attribute of the `settings` instance.
+
+        Returns:
+        None
+        """
         subprocess.Popen(["explorer", os.path.normpath(self.settings.explorer_directory)], shell=True)
 
     def start_processing(self):
+        """
+        Initiates the file processing by spawning a new thread. The processing task is defined by 
+        the `process_files` method of this instance.
+
+        Returns:
+        None
+        """
         processing_thread = threading.Thread(target=self.process_files)
         processing_thread.start()
 
     def load_last_log_entries(self):
+        """
+        Loads the last 15 entries from the log file (or all entries if there are fewer than 15). 
+        Each log entry contains details about file processing. The details are extracted and inserted 
+        into the `log_tree` attribute, which is presumably a treeview widget.
+
+        In case the log file does not exist, the function silently continues without any action.
+
+        Returns:
+        None
+        """
         try:
             with open(self.settings.log_file, "r") as f:
                 log_data_list = json.load(f)
@@ -358,9 +392,14 @@ class VideoConverterApp:
             pass  # Handle the case when the log file is not found 
     
     def clear_log(self):
-    # Path to the log file (adjust to your actual path)
-      
-        # Clear the file by writing an empty JSON array
+
+        """
+        Clears the log file by overwriting it with an empty JSON array. Also updates any related GUI 
+        components to reflect the cleared log, such as a status indicator and a treeview widget.
+
+        Returns:
+        None
+        """
         with open(self.settings.log_file, 'w') as log_file:
             log_file.write("[]")
 
@@ -368,7 +407,17 @@ class VideoConverterApp:
         self.status_var.set("Log cleared successfully!")
         self.log_tree.delete(*self.log_tree.get_children())
     
-    def load_config(self,config_file_path):
+    def load_config(self,config_file_path):        
+        """
+        Loads the configuration from a specified JSON file.
+
+        Parameters:
+        - config_file_path (str): The path to the configuration file to be loaded.
+
+        Returns:
+        dict: A dictionary containing the configuration data. If the file is not found, 
+              an empty dictionary is returned.
+        """
         try:
             with open(config_file_path, 'r') as file:
                 config = json.load(file)

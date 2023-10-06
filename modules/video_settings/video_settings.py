@@ -3,12 +3,29 @@ import tkinter as tk
 import os
 import json
 
-class VideoSettings:
+class VideoSettings:    
+    """
+    A class to handle the settings for video processing. These settings include codec details,
+    video dimensions, file paths, and other related configurations. The settings can be loaded from 
+    a configuration JSON file, or set to default values if the file doesn't exist.
+
+    Attributes:
+    Various attributes related to video settings and configurations.
+
+    Methods:
+    - load_config(config_file_path): Loads video settings from a given configuration file.
+    - set_defaults(): Sets the default values for the video settings.
+    """
     def __init__(self, config_path="video_settings.json"):
-        
-        
-        # UI related variables
-        # Determine the directory of the current module
+        """
+        Initializes a new instance of the VideoSettings class. It sets up the configuration 
+        based on the provided JSON file or defaults if the file doesn't exist.
+
+        Parameters:
+        - config_path (str): Path to the configuration file relative to the module's directory. 
+                             Defaults to "video_settings.json".
+        """
+           
         module_dir = os.path.dirname(os.path.abspath(__file__))
 
         # Form the path to the configuration file relative to this module's directory
@@ -25,7 +42,13 @@ class VideoSettings:
         self.frame_rate_var = tk.StringVar(value=self.frame_rate)
         
     def load_config(self, config_file_path):
-        """Load video settings from a configuration file."""
+        """
+        Load video settings from a configuration file. If the configuration file doesn't exist, 
+        default values are set using the `set_defaults` method.
+
+        Parameters:
+        - config_file_path (str): Absolute path to the configuration file to be loaded.
+        """
         if os.path.exists(config_file_path):
             self.set_defaults()
             with open(config_file_path, "r") as config_file:
@@ -76,7 +99,10 @@ class VideoSettings:
             self.set_defaults()
 
     def set_defaults(self):
-        """Set default values for the video settings."""
+        """
+        Set default values for the video settings. This method is called when a configuration file 
+        doesn't exist or when there's a need to reset the settings to their default values.
+        """
         self.file_path = ""
         self.file_directory = ""
         self.file_name = ""
