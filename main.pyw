@@ -1,4 +1,6 @@
-# Main Python File. Launches the GUI without a command window
+# This is the main Python file that launches the GUI for the video converter application.
+# It adds the current directory to the system path and imports the VideoConverterApp class from the GUI module.
+# It then creates an instance of the VideoConverterApp class and starts the main event loop.
 import tkinter as tk
 import sys
 import os

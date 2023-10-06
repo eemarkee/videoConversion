@@ -1,2 +1,3 @@
 logs/conversion_log.json
 *.exe
+*.pyc

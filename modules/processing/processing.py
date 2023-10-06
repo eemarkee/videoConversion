@@ -11,10 +11,32 @@ import tempfile
 progress_pattern = re.compile(r"frame=\s*(\d+)")
 
 class VideoProcessor:
+    """
+    A class for processing video inputs using the ffmpeg library.
+
+    Methods:
+    - get_video_info(file_path): Returns a dictionary containing information about the video file at the given path.
+    - map_codec(output_codec, codec_map): Maps the output codec to the corresponding ffmpeg codec.
+    """    
     def __init__(self):
         self.settings = Settings()
     def get_video_info(self, file_path):
+        """
+        Returns a dictionary containing information about the video file at the given path.
 
+        Parameters:
+        - file_path: The path to the video file
+
+        Returns:
+        A dictionary containing the following keys:
+        - input_codec: The codec used in the input video
+        - input_size: The size of the input video file in bytes
+        - total_frames: The total number of frames in the input video
+        - frame_rate: The frame rate of the input video in frames per second
+
+        Raises:
+        - subprocess.CalledProcessError: If there's an error executing the ffprobe command
+        """
         ffprobe_command = (
             f'{self.settings.ffprobe_path} -v error -show_entries format:stream=codec_name,format:stream=codec_type,format:stream=r_frame_rate -of json "{file_path}"'
         )
@@ -51,12 +73,36 @@ class VideoProcessor:
             print(e.output.decode())  # print the actual output of the command for more information
         
     def map_codec(self,codec,codec_map):
+        """
+        Maps the input codec to the corresponding ffmpeg codec using the given codec map.
+
+        Parameters:
+        - codec: The input codec to map
+        - codec_map: A dictionary mapping input codecs to ffmpeg codecs
+
+        Returns:
+        The corresponding ffmpeg codec for the input codec, or the input codec if it's not in the codec map.
+        """
         if codec in codec_map:
             return codec_map[codec]
         else:
             return codec
 
     def convert_video(self,video_settings, app):
+        """
+        Converts a video file to a different codec using ffmpeg.
+
+        Parameters:
+        - video_settings: A settings object containing video-related configurations
+        - app: The main application or GUI object to update progress
+
+        Returns:
+        - "SKIPPED" if the input file is already in the desired output codec and overwrite_file is False
+        - None if the conversion is successful
+
+        Raises:
+        - Exception: If there's an error during conversion
+        """        
         # Gather input video information
         video_settings.input_codec, video_settings.input_size, video_settings.total_frames, video_settings.input_frame_rate = self.get_video_info(video_settings.file_path)
         video_settings.input_codec = self.map_codec(video_settings.input_codec, video_settings.codec_map)
@@ -90,7 +136,7 @@ class VideoProcessor:
         cmd = [
             f'{self.settings.ffmpeg_path}',
             "-y",
-            "-loglevel", "quiet", "-stats",
+            "-loglevel", "error", "-stats",
         ]
         if app.use_start_stop.get():
             cmd.extend([
@@ -103,9 +149,14 @@ class VideoProcessor:
         cmd.extend([
             "-i", str(video_settings.file_path),
         ])
-        if app.overwrite_fps:
-            video_settings.output_frame_rate = video_settings.input_frame_rate
+        if app.overwrite_fps.get():
             cmd.extend(["-r", str(int(video_settings.output_frame_rate))])
+        # Check if video_settings.scale_width or video_settings.scale_height are not equal to one
+        if video_settings.scale_width != 1 or video_settings.scale_height != 1:
+            cmd.append("-vf")
+            cmd.append(
+                f"scale=iw*{video_settings.scale_width}:ih*{video_settings.scale_height}"
+            )
         # Add codec-specific options based on output_codec
         if video_settings.output_codec == "ffv1":
             cmd.extend([
@@ -130,10 +181,10 @@ class VideoProcessor:
                 "-pix_fmt", "yuv420p",
             ])
             
-
+        
         # Add common options for audio and output file
         cmd.extend([
-            "-c:a", "copy",
+            #"-c:a", "copy", # this sometimes causes an error during conversion... might just let ffmpeg determine the audio codec
             video_settings.output_path,
         ])
 
@@ -153,8 +204,8 @@ class VideoProcessor:
                 app.current_file_label.config(text="Processing: " + video_settings.file_name)  # Update current file label
                 app.root.update_idletasks()  # Update the GUI
 
-
-        process.communicate()  # Wait for the process to finish
+        # Capture the error message if the process fails
+        _, stderr = process.communicate()
 
         if process.returncode == 0:
             app.status_var.set("Conversion complete")
@@ -163,10 +214,11 @@ class VideoProcessor:
             video_settings.relative_size = round(video_settings.output_size/video_settings.input_size,3)
 
         else:
-            app.status_var.set("Conversion failed")
+            video_settings.cmd = ' '.join(cmd)
+            video_settings.error = stderr
+            app.status_var.set(f"Conversion failed: {stderr}")
 
-
-        app.root.after(100, lambda: app.root.update())  # Update the GUI every 100 ms
+        app.root.after(100, lambda: app.root.update())  # Update the GUI every 200 ms
         app.progress_var.set(100)
     
     def process_tiffs_to_video(self, tiff_files, ffmpeg_path, video_settings, app):
@@ -239,7 +291,7 @@ class VideoProcessor:
 
         # Add common options for audio and output file
         cmd.extend([
-            "-c:a", "copy",
+            #"-c:a", "copy",
             video_settings.output_path,
         ])
 

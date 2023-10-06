@@ -18,6 +18,8 @@ class VideoSettings:
         
         self.output_codec_var = tk.StringVar(value=self.output_codec)
         self.crf_var = tk.StringVar(value=self.crf)
+        self.scale_width_var = tk.DoubleVar(value=self.scale_width)
+        self.scale_height_var = tk.DoubleVar(value=self.scale_height)
         self.start_time_var = tk.StringVar(value=self.start_time)
         self.stop_time_var = tk.StringVar(value=self.stop_time)
         self.frame_rate_var = tk.StringVar(value=self.frame_rate)
@@ -48,8 +50,10 @@ class VideoSettings:
             self.input_size = config_data.get("input_size", 1)
             self.output_size = config_data.get("output_size", 1)
             self.relative_size = config_data.get("relative_size", 1)
-            self.start_time_var = config_data.get("start_time", 0.0)
-            self.stop_time_var = config_data.get("stop_time", -1)
+            self.start_time = config_data.get("start_time", 0.0)
+            self.scale_width = config_data.get("scale_width", 1)
+            self.scale_height = config_data.get("scale_height", 1)
+            self.stop_time = config_data.get("stop_time", -1)
             self.codec_map = config_data.get("codec_map", {
                 "hevc": "h265",
                 "avc": "h264",
@@ -78,7 +82,7 @@ class VideoSettings:
         self.file_name = ""
         self.output_name = ""
         self.output_path = ""
-        self.output_codec = "h265"
+        self.output_codec = "h264"
         self.crf = 28
         self.frame_rate = 30
         self.output_frame_rate = 30

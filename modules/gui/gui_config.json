@@ -15,7 +15,7 @@
         "status": "Status: "
     },
     "default_values": {
-        "output_codec": "h265",
+        "output_codec": "h264",
         "crf": 28
     },
     "columns": [
